@@ -8,11 +8,11 @@
     Software Foundation, either version 3 of the License, or (at your option)
     any later version.
 
-    blargSnes is distributed in the hope that it will be useful, but WITHOUT ANY 
-    WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS 
+    blargSnes is distributed in the hope that it will be useful, but WITHOUT ANY
+    WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
     FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License along 
+    You should have received a copy of the GNU General Public License along
     with blargSnes. If not, see http://www.gnu.org/licenses/.
 */
 
@@ -24,43 +24,45 @@
 
 typedef struct
 {
-	u8 __pad3[2];		// -40 
+	u8 __pad3[2];		// -40
 	u8 LastBusVal;		// -38
 	u8 __pad2;			// -37
-	
+
 	s32 SPC_CyclesPerLine;	// -36 | cycleratio * 1364
 	s32 SPC_CycleRatio;		// -32
 	s32 SPC_LastCycle;		// -28 | SPC cycle count (<<24) at last SPC run
-	
+
 	u16 IRQ_VMatch;		// -24
 	u16 IRQ_HMatch;		// -22
 	u16 IRQ_CurHMatch; 	// -20 | reset when the IRQ is fired
-	
+
 	u16 VCount;		// -18
-	
+
 	u8 __pad1[2];	// -16 for 'full' HCount (lower 16 bits are garbage)
 	u16 HCount;		// -14
-	
+
 	u32 SRAMMask;	// -0xC
-	
+
 	u8 TotalLines;		// -8 | 262 for NTSC, 312 for PAL
 	u8 ScreenHeight; 	// -7 | 224 or 239
-	
+
 	u8 IRQCond;		// -0x6
-	
+
 	// bit7: vblank
 	// bit6: hblank (retired)
 	// bit5: vblank (ack)
 	// bit4: IRQ (ack)
 	u8 HVBFlags;	// -0x5
-	
+
 	u32 SRAMDirty;	// -0x4
-	
+
 } SNES_StatusData;
 
 extern u8 SNES_AutoJoypad;
 extern u8 SNES_JoyBit;
+extern u8 SNES_JoyBit2;
 extern u32 SNES_JoyBuffer;
+extern u32 SNES_JoyBuffer2;
 extern u8 SNES_Joy16;
 
 #define SNESSTATUS_SIZE ((sizeof(SNES_StatusData) + 3) & ~3)

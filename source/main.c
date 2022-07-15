@@ -661,7 +661,7 @@ int main()
 	//aptCloseSession();
 
 	gfxInitDefault();
-	
+
 	Config.HardwareMode7Filter = -1;
 	LoadConfig(1);
 	

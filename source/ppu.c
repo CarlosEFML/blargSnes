@@ -8,11 +8,11 @@
     Software Foundation, either version 3 of the License, or (at your option)
     any later version.
 
-    blargSnes is distributed in the hope that it will be useful, but WITHOUT ANY 
-    WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS 
+    blargSnes is distributed in the hope that it will be useful, but WITHOUT ANY
+    WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
     FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License along 
+    You should have received a copy of the GNU General Public License along
     with blargSnes. If not, see http://www.gnu.org/licenses/.
 */
 
@@ -30,7 +30,7 @@ u8 SPC_IOPorts[8];
 
 
 
-const u8 PPU_OBJWidths[16] = 
+const u8 PPU_OBJWidths[16] =
 {
 	8, 16,
 	8, 32,
@@ -41,7 +41,7 @@ const u8 PPU_OBJWidths[16] =
 	16, 32,
 	16, 32
 };
-const u8 PPU_OBJHeights[16] = 
+const u8 PPU_OBJHeights[16] =
 {
 	8, 16,
 	8, 32,
@@ -72,7 +72,7 @@ const u8 PPU_OBJHeights[16] =
 // E 11:10 == outside, all disabled
 // F 11:11 == outside, all disabled
 
-const u16 PPU_WindowCombine[] = 
+const u16 PPU_WindowCombine[] =
 {
 	/* OR
 	1 1 1 1
@@ -80,21 +80,21 @@ const u16 PPU_WindowCombine[] =
 	1 0 0 0
 	1 0 0 0 */
 	0x111F,
-	
+
 	/* AND
 	1 0 1 1
 	0 0 0 0
 	1 0 0 0
 	1 0 0 0 */
 	0x110D,
-	
+
 	/* XOR
 	0 1 1 1
 	1 0 0 0
 	1 0 0 0
 	1 0 0 0 */
 	0x111E,
-	
+
 	/* XNOR
 	1 0 1 1
 	0 1 0 0
@@ -114,18 +114,18 @@ void PPU_Init()
 {
 	PPU.MainBuffer = (u16*)linearAlloc(256*512*2);
 	PPU.SubBuffer = &PPU.MainBuffer[256*256];
-	
+
 	SNES_Status->ScreenHeight = 224;
-	
+
 	PPU.SubBackdrop = 0x0001;
-	
+
 	PPU_ColorEffectSection* c = &PPU.ColorEffectSections[0];
 	c->EndOffset = 240;
 	c->ColorMath = 0;
 	c->Brightness = 0xFF;
-	
+
 	PPU.HardwareRenderer = Config.HardwareRenderer;
-	
+
 	if (PPU.HardwareRenderer)
 		PPU_Init_Hard();
 	else
@@ -135,17 +135,17 @@ void PPU_Init()
 void PPU_SwitchRenderers()
 {
 	int i;
-	
+
 	if (PPU.HardwareRenderer == Config.HardwareRenderer)
 		return;
-		
+
 	if (PPU.HardwareRenderer)
 		PPU_DeInit_Hard();
 	else
 		PPU_DeInit_Soft();
-		
+
 	PPU.HardwareRenderer = Config.HardwareRenderer;
-	
+
 	if (PPU.HardwareRenderer)
 	{
 		for (i = 1; i < 256; i++)
@@ -156,7 +156,7 @@ void PPU_SwitchRenderers()
 		for (i = 0; i < 256; i++)
 			PPU.Palette[i] &= ~0x0001;
 	}
-	
+
 	if (PPU.HardwareRenderer)
 	{
 		PPU_Init_Hard();
@@ -169,47 +169,47 @@ void PPU_SwitchRenderers()
 void PPU_Reset()
 {
 	int i;
-	
+
 	u8 hardrend = PPU.HardwareRenderer;
 	u16* mbuf = PPU.MainBuffer;
 	u16* sbuf = PPU.SubBuffer;
-	
+
 	memset(&PPU, 0, sizeof(PPUState));
-	
+
 	ApplyScaling();
-	
+
 	PPU.HardwareRenderer = hardrend;
 	PPU.MainBuffer = mbuf;
 	PPU.SubBuffer = sbuf;
-	
+
 	for (i = 0; i < 4; i++)
 	{
 		PPU.BG[i].Tileset = (u16*)PPU.VRAM;
 		PPU.BG[i].Tilemap = (u16*)PPU.VRAM;
-		
+
 		PPU.BG[i].WindowCombine = PPU_WindowCombine[0];
 	}
-	
+
 	PPU.OBJWindowCombine = PPU_WindowCombine[0];
 	PPU.ColorMathWindowCombine = PPU_WindowCombine[0];
-	
+
 	PPU_WindowSegment* s = &PPU.Window[0];
 	s->EndOffset = 256;
 	s->WindowMask = 0x0F;
 	s->ColorMath = 0x10;
-	
+
 	PPU_ColorEffectSection* c = &PPU.ColorEffectSections[0];
 	c->EndOffset = 240;
 	c->ColorMath = 0;
 	c->Brightness = 0xFF;
-	
+
 	PPU.OBJTileset = (u16*)PPU.VRAM;
-	
+
 	PPU.OBJWidth = &PPU_OBJWidths[0];
 	PPU.OBJHeight = &PPU_OBJHeights[0];
-	
+
 	PPU.SubBackdrop = 0x0001;
-	
+
 	if (PPU.HardwareRenderer)
 	{
 		for (i = 1; i < 256; i++)
@@ -224,7 +224,7 @@ void PPU_Reset()
 void PPU_DeInit()
 {
 	linearFree(PPU.MainBuffer);
-	
+
 	if (PPU.HardwareRenderer)
 		PPU_DeInit_Hard();
 	else
@@ -240,9 +240,9 @@ inline void PPU_SetXScroll(int nbg, u8 val)
 		PPU.M7Old = val;
 		PPU.Mode7Dirty = 1;
 	}
-	
+
 	PPU_Background* bg = &PPU.BG[nbg];
-	
+
 	bg->XScroll = (val << 8) | (PPU.BGOld & 0xF8) | ((bg->XScroll >> 8) & 0x7);
 	PPU.BGOld = val;
 }
@@ -255,9 +255,9 @@ inline void PPU_SetYScroll(int nbg, u8 val)
 		PPU.M7Old = val;
 		PPU.Mode7Dirty = 1;
 	}
-	
+
 	PPU_Background* bg = &PPU.BG[nbg];
-	
+
 	bg->YScroll = (val << 8) | PPU.BGOld;
 	PPU.BGOld = val;
 }
@@ -265,7 +265,7 @@ inline void PPU_SetYScroll(int nbg, u8 val)
 inline void PPU_SetBGSCR(int nbg, u8 val)
 {
 	PPU_Background* bg = &PPU.BG[nbg];
-	
+
 	bg->Size = (val & 0x03);
 	bg->TilemapOffset = (val & 0xFC) << 9;
 	bg->Tilemap = (u16*)&PPU.VRAM[bg->TilemapOffset];
@@ -274,7 +274,7 @@ inline void PPU_SetBGSCR(int nbg, u8 val)
 inline void PPU_SetBGCHR(int nbg, u8 val)
 {
 	PPU_Background* bg = &PPU.BG[nbg];
-	
+
 	bg->TilesetOffset = val << 13;
 	bg->Tileset = (u16*)&PPU.VRAM[bg->TilesetOffset];
 }
@@ -285,16 +285,16 @@ inline void PPU_SetColor(u32 num, u16 val)
 	val &= ~0x8000;
 	if (PPU.CGRAM[num] == val) return;
 	PPU.CGRAM[num] = val;
-	
+
 	// RGB555, the 3DS way
 	u16 temp = (val & 0x001F) << 11;
 	temp    |= (val & 0x03E0) << 1;
 	temp    |= (val & 0x7C00) >> 9;
-	
+
 	if (PPU.HardwareRenderer)
 	{
 		PPU.Palette[num] = temp | 0x0001;
-		
+
 		if(num == 0)
 			PPU.MainBackdropDirty = 1;
 		else
@@ -310,7 +310,7 @@ inline void PPU_SetColor(u32 num, u16 val)
 void PPU_UpdateHardMemory()
 {
 	memcpy(PPU.HardPalette, PPU.Palette, 256*2);
-	
+
 	memcpy(PPU.HardOAM, PPU.OAM, 0x220);
 }
 
@@ -319,23 +319,23 @@ u32 PPU_TranslateVRAMAddress(u32 addr)
 	switch (PPU.VRAMInc & 0x0C)
 	{
 		case 0x00: return addr;
-		
+
 		case 0x04:
 			return (addr & 0x1FE01) |
 				  ((addr & 0x001C0) >> 5) |
 				  ((addr & 0x0003E) << 3);
-				  
+
 		case 0x08:
 			return (addr & 0x1FC01) |
 				  ((addr & 0x00380) >> 6) |
 				  ((addr & 0x0007E) << 3);
-				  
+
 		case 0x0C:
 			return (addr & 0x1F801) |
 				  ((addr & 0x00700) >> 7) |
 				  ((addr & 0x000FE) << 3);
 	}
-	
+
 	// herp
 	return addr;
 }
@@ -344,12 +344,12 @@ u32 PPU_TranslateVRAMAddress(u32 addr)
 void PPU_LatchHVCounters()
 {
 	if (!(SNES_WRIO & 0x80)) return;
-	
+
 	PPU.OPHCT = 22 + (SNES_Status->HCount >> 2);
 	if (PPU.OPHCT >= 340) PPU.OPHCT -= 340;
-	
+
 	PPU.OPVCT = SNES_Status->VCount;
-	
+
 	PPU.OPLatch = 0x40;
 }
 
@@ -375,12 +375,12 @@ u8 PPU_Read8(u32 addr)
 		case 0x34: ret = PPU.MulResult & 0xFF; break;
 		case 0x35: ret = (PPU.MulResult >> 8) & 0xFF; break;
 		case 0x36: ret = (PPU.MulResult >> 16) & 0xFF; break;
-		
+
 		case 0x37:
 			PPU_LatchHVCounters();
 			ret = 0x21;
 			break;
-			
+
 		case 0x38:
 			if (PPU.OAMAddr >= 0x200)
 				ret = PPU.OAM[PPU.OAMAddr & 0x21F];
@@ -389,7 +389,7 @@ u8 PPU_Read8(u32 addr)
 			PPU.OAMAddr++;
 			PPU.OAMAddr &= ~0x400;
 			break;
-		
+
 		case 0x39:
 			{
 				ret = PPU.VRAMPref & 0xFF;
@@ -412,13 +412,13 @@ u8 PPU_Read8(u32 addr)
 				}
 			}
 			break;
-			
+
 		case 0x3B:
 			ret = ((u8*)PPU.CGRAM)[PPU.CGRAMAddr];
 			PPU.CGRAMAddr++;
 			PPU.CGRAMAddr &= ~0x200; // prevent overflow
 			break;
-			
+
 		case 0x3C:
 			if (PPU.OPHFlag)
 			{
@@ -443,20 +443,20 @@ u8 PPU_Read8(u32 addr)
 				ret = PPU.OPVCT & 0xFF;
 			}
 			break;
-			
+
 		case 0x3E: ret = 0x01 | PPU.OBJOverflow; break;
-		case 0x3F: 
+		case 0x3F:
 			ret = 0x01 | (ROM_Region ? 0x10 : 0x00) | PPU.OPLatch;
 			PPU.OPLatch = 0;
 			PPU.OPHFlag = 0;
 			PPU.OPVFlag = 0;
 			break;
-		
+
 		case 0x40: SPC_Compensate(); ret = SPC_IOPorts[4]; break;
 		case 0x41: SPC_Compensate(); ret = SPC_IOPorts[5]; break;
 		case 0x42: SPC_Compensate(); ret = SPC_IOPorts[6]; break;
 		case 0x43: SPC_Compensate(); ret = SPC_IOPorts[7]; break;
-		
+
 		case 0x80: ret = SNES_SysRAM[Mem_WRAMAddr++]; Mem_WRAMAddr &= ~0x20000; break;
 
 		default:
@@ -465,7 +465,7 @@ u8 PPU_Read8(u32 addr)
 			else if (addr >= 0x44 && addr < 0x80)
 				bprintf("!! SPC IO MIRROR READ %02X\n", addr);
 			else
-				bprintf("Open bus 21%02X\n", addr); 
+				bprintf("Open bus 21%02X\n", addr);
 			break;
 	}
 
@@ -479,10 +479,10 @@ u16 PPU_Read16(u32 addr)
 	{
 		// not in the right place, but well
 		// our I/O functions are mapped to the whole $21xx range
-		
+
 		case 0x40: SPC_Compensate(); ret = *(u16*)&SPC_IOPorts[4]; break;
 		case 0x42: SPC_Compensate(); ret = *(u16*)&SPC_IOPorts[6]; break;
-		
+
 		default:
 			ret = PPU_Read8(addr);
 			ret |= (PPU_Read8(addr+1) << 8);
@@ -503,19 +503,19 @@ void PPU_Write8(u32 addr, u8 val)
 					if (PPU.HardwareRenderer)
 						PPU_UpdateHardMemory();
 				}
-				
+
 				PPU.ForcedBlank = val & 0x80;
 				if (val & 0x80) val = 0;
 				else val &= 0x0F;
-				
+
 				u8 newbright;
-				if (val == 0xF) 
+				if (val == 0xF)
 					newbright = 0xFF;
 				else if (val)
 					newbright = (val + 1) << 4;
 				else
 					newbright = 0;
-					
+
 				if (PPU.CurBrightness != newbright)
 				{
 					PPU.CurBrightness = newbright;
@@ -523,19 +523,19 @@ void PPU_Write8(u32 addr, u8 val)
 				}
 			}
 			break;
-			
+
 		case 0x01:
 			{
 				PPU.OBJWidth = &PPU_OBJWidths[(val & 0xE0) >> 4];
 				PPU.OBJHeight = &PPU_OBJHeights[(val & 0xE0) >> 4];
-				
+
 				PPU.OBJTilesetAddr = (val & 0x03) << 14;	// 3rd bit would make it outside of VRAM? Then why reserve 3 bits for this?
 				PPU.OBJTileset = (u16*)&PPU.VRAM[PPU.OBJTilesetAddr];
 				PPU.OBJGap = (val & 0x18) << 10;
 				PPU.OBJDirty |= 0x01;
 			}
 			break;
-			
+
 		case 0x02:
 			PPU.OAMAddr = (PPU.OAMAddr & 0x200) | (val << 1);
 			PPU.OAMReload = PPU.OAMAddr;
@@ -547,7 +547,7 @@ void PPU_Write8(u32 addr, u8 val)
 			PPU.OAMReload = PPU.OAMAddr;
 			PPU.FirstOBJ = PPU.OAMPrio ? ((PPU.OAMAddr >> 2) & 0x7F) : 0;
 			break;
-			
+
 		case 0x04:
 			if (PPU.OAMAddr >= 0x200)
 			{
@@ -566,7 +566,7 @@ void PPU_Write8(u32 addr, u8 val)
 			PPU.OAMAddr++;
 			PPU.OAMAddr &= ~0x400;
 			break;
-			
+
 		case 0x05:
 			if(PPU.Mode != val)
 			{
@@ -574,18 +574,18 @@ void PPU_Write8(u32 addr, u8 val)
 				PPU.ModeDirty = 1;
 			}
 			break;
-			
+
 		case 0x06: // mosaic
 			// effect is mostly used for screen transitions, ie unimportant
 			// and tricky to implement efficiently.
 			// TODO implement it later.
 			break;
-			
+
 		case 0x07: PPU_SetBGSCR(0, val); break;
 		case 0x08: PPU_SetBGSCR(1, val); break;
 		case 0x09: PPU_SetBGSCR(2, val); break;
 		case 0x0A: PPU_SetBGSCR(3, val); break;
-			
+
 		case 0x0B:
 			PPU_SetBGCHR(0, val & 0x0F);
 			PPU_SetBGCHR(1, val >> 4);
@@ -594,7 +594,7 @@ void PPU_Write8(u32 addr, u8 val)
 			PPU_SetBGCHR(2, val & 0x0F);
 			PPU_SetBGCHR(3, val >> 4);
 			break;
-		
+
 		case 0x0D: PPU_SetXScroll(0, val); break;
 		case 0x0E: PPU_SetYScroll(0, val); break;
 		case 0x0F: PPU_SetXScroll(1, val); break;
@@ -603,7 +603,7 @@ void PPU_Write8(u32 addr, u8 val)
 		case 0x12: PPU_SetYScroll(2, val); break;
 		case 0x13: PPU_SetXScroll(3, val); break;
 		case 0x14: PPU_SetYScroll(3, val); break;
-		
+
 		case 0x15:
 			PPU.VRAMInc = val;
 			switch (val & 0x03)
@@ -614,7 +614,7 @@ void PPU_Write8(u32 addr, u8 val)
 				case 0x03: PPU.VRAMStep = 256; break;
 			}
 			break;
-			
+
 		case 0x16:
 			PPU.VRAMAddr &= 0xFE00;
 			PPU.VRAMAddr |= (val << 1);
@@ -627,7 +627,7 @@ void PPU_Write8(u32 addr, u8 val)
 			addr = PPU_TranslateVRAMAddress(PPU.VRAMAddr);
 			PPU.VRAMPref = *(u16*)&PPU.VRAM[addr];
 			break;
-		
+
 		case 0x18: // VRAM shit
 			{
 				addr = PPU_TranslateVRAMAddress(PPU.VRAMAddr);
@@ -654,7 +654,7 @@ void PPU_Write8(u32 addr, u8 val)
 					PPU.VRAMAddr += PPU.VRAMStep;
 			}
 			break;
-			
+
 		case 0x1A:
 			if(PPU.M7Sel != val)
 			{
@@ -662,7 +662,7 @@ void PPU_Write8(u32 addr, u8 val)
 				PPU.Mode7Dirty = 1;
 			}
 			break;
-			
+
 		case 0x1B: // multiply/mode7 shiz
 			{
 				u16 fval = (u16)(PPU.M7Old | (val << 8));
@@ -690,7 +690,7 @@ void PPU_Write8(u32 addr, u8 val)
 			PPU.M7Old = val;
 			PPU.Mode7Dirty = 1;
 			break;
-			
+
 		case 0x1F: // mode7 center
 			PPU.M7RefX = (s16)((val << 8) | PPU.M7Old);
 			PPU.M7Old = val;
@@ -701,11 +701,11 @@ void PPU_Write8(u32 addr, u8 val)
 			PPU.M7Old = val;
 			PPU.Mode7Dirty = 1;
 			break;
-			
+
 		case 0x21:
 			PPU.CGRAMAddr = val << 1;
 			break;
-		
+
 		case 0x22:
 			if (!(PPU.CGRAMAddr & 0x1))
 				PPU.CGRAMVal = val;
@@ -715,7 +715,7 @@ void PPU_Write8(u32 addr, u8 val)
 			PPU.CGRAMAddr++;
 			PPU.CGRAMAddr &= ~0x200; // prevent overflow
 			break;
-			
+
 		case 0x23:
 			if (PPU.WinMask[0] != val)
 			{
@@ -743,7 +743,7 @@ void PPU_Write8(u32 addr, u8 val)
 				PPU.WindowDirty = 2;
 			}
 			break;
-		
+
 		case 0x26:
 			if(PPU.WinX[0] != val)
 			{
@@ -772,7 +772,7 @@ void PPU_Write8(u32 addr, u8 val)
 				PPU.WindowDirty = 1;
 			}
 			break;
-		
+
 		case 0x2A:
 			if(PPU.WinCombine[0] != val)
 			{
@@ -784,7 +784,7 @@ void PPU_Write8(u32 addr, u8 val)
 				PPU.WindowDirty = 2;
 			}
 			break;
-			
+
 		case 0x2B:
 			if(PPU.WinCombine[1] != (val & 0xF))
 			{
@@ -794,7 +794,7 @@ void PPU_Write8(u32 addr, u8 val)
 				PPU.WindowDirty = 2;
 			}
 			break;
-			
+
 		case 0x2C:
 			if (PPU.MainLayerEnable != val)
 			{
@@ -811,7 +811,7 @@ void PPU_Write8(u32 addr, u8 val)
 				PPU.WindowDirty = 1;
 			}
 			break;
-			
+
 		case 0x2E: // window enable
 			if (PPU.MainWindowEnable != val)
 			{
@@ -826,7 +826,7 @@ void PPU_Write8(u32 addr, u8 val)
 				if (PPU.HardwareRenderer) PPU.WindowDirty = 1;
 			}
 			break;
-		
+
 		case 0x30:
 			if ((PPU.ColorMath1 ^ val) & 0x03)
 			{
@@ -845,7 +845,7 @@ void PPU_Write8(u32 addr, u8 val)
 			}
 			PPU.ColorMath2 = val;
 			break;
-			
+
 		case 0x32:
 			{
 				u8 intensity = val & 0x1F;
@@ -855,7 +855,7 @@ void PPU_Write8(u32 addr, u8 val)
 				PPU.SubBackdropDirty = 1;
 			}
 			break;
-			
+
 		case 0x33: // SETINI
 			{
 				u32 height = (val & 0x04) ? 239:224;
@@ -871,17 +871,17 @@ void PPU_Write8(u32 addr, u8 val)
 				if (val & 0x08) bprintf("!! PSEUDO HIRES\n");
 			}
 			break;
-			
+
 		case 0x40: SPC_Compensate(); SPC_IOPorts[0] = val; break;
 		case 0x41: SPC_Compensate(); SPC_IOPorts[1] = val; break;
 		case 0x42: SPC_Compensate(); SPC_IOPorts[2] = val; break;
 		case 0x43: SPC_Compensate(); SPC_IOPorts[3] = val; break;
-		
+
 		case 0x80: SNES_SysRAM[Mem_WRAMAddr++] = val; Mem_WRAMAddr &= ~0x20000; break;
 		case 0x81: Mem_WRAMAddr = (Mem_WRAMAddr & 0x0001FF00) | val; break;
 		case 0x82: Mem_WRAMAddr = (Mem_WRAMAddr & 0x000100FF) | (val << 8); break;
 		case 0x83: Mem_WRAMAddr = (Mem_WRAMAddr & 0x0000FFFF) | ((val & 0x01) << 16); break;
-				
+
 		default:
 			//iprintf("PPU_Write8(%08X, %08X)\n", addr, val);
 			break;
@@ -893,13 +893,13 @@ void PPU_Write16(u32 addr, u16 val)
 	switch (addr)
 	{
 		// optimized route
-		
+
 		case 0x16:
 			PPU.VRAMAddr = (val << 1) & 0xFFFEFFFF;
 			addr = PPU_TranslateVRAMAddress(PPU.VRAMAddr);
 			PPU.VRAMPref = *(u16*)&PPU.VRAM[addr];
 			break;
-			
+
 		case 0x18:
 			addr = PPU_TranslateVRAMAddress(PPU.VRAMAddr);
 			if (*(u16*)&PPU.VRAM[addr] != val)
@@ -910,16 +910,16 @@ void PPU_Write16(u32 addr, u16 val)
 			}
 			PPU.VRAMAddr += PPU.VRAMStep;
 			break;
-			
+
 		case 0x40: SPC_Compensate(); *(u16*)&SPC_IOPorts[0] = val; break;
 		case 0x41: SPC_Compensate(); *(u16*)&SPC_IOPorts[1] = val; break;
 		case 0x42: SPC_Compensate(); *(u16*)&SPC_IOPorts[2] = val; break;
-		
+
 		case 0x3F:
 		case 0x43: bprintf("!! write $21%02X %04X\n", addr, val); break;
-		
+
 		case 0x81: Mem_WRAMAddr = (Mem_WRAMAddr & 0x00010000) | val; break;
-		
+
 		// otherwise, just do two 8bit writes
 		default:
 			PPU_Write8(addr, val & 0x00FF);
@@ -942,12 +942,12 @@ inline void PPU_ComputeSingleWindow(PPU_WindowSegment* s, u32 x1, u32 x2, u32 ma
 		s->EndOffset = x1;
 		s->WindowMask = WINMASK_OUT;
 		s++;
-		
+
 		s->EndOffset = x2;
 		s->WindowMask = mask;
 		s++;
 	}
-	
+
 	s->EndOffset = 256;
 	s->WindowMask = WINMASK_OUT;
 }
@@ -957,16 +957,16 @@ void PPU_ComputerDoubleWindow(PPU_WindowSegment* s)
 	if (PPU.WinX[0] < PPU.WinX[2])
 	{
 		// window 1 first
-		
+
 		// border to win1 x1
 		s->EndOffset = PPU.WinX[0];
 		s->WindowMask = WINMASK_OUT;
 		s++;
-		
+
 		if (PPU.WinX[2] < PPU.WinX[1])
 		{
 			// windows overlapped
-			
+
 			// win1 x1 to win2 x1
 			s->EndOffset = PPU.WinX[2];
 			s->WindowMask = WINMASK_1;
@@ -991,7 +991,7 @@ void PPU_ComputerDoubleWindow(PPU_WindowSegment* s)
 				s->WindowMask = WINMASK_OUT;
 				return;
 			}
-			
+
 			// windows intersect
 
 			// win2 x1 to win1 x2
@@ -1002,23 +1002,23 @@ void PPU_ComputerDoubleWindow(PPU_WindowSegment* s)
 		else
 		{
 			// windows separate
-				
+
 			// win1 x1 to win1 x2
 			s->EndOffset = PPU.WinX[1];
 			s->WindowMask = WINMASK_1;
 			s++;
-				
+
 			// win1 x2 to win2 x1
 			s->EndOffset = PPU.WinX[2];
 			s->WindowMask = WINMASK_OUT;
 			s++;
 		}
-			
+
 		// to win2 x2
 		s->EndOffset = PPU.WinX[3];
 		s->WindowMask = WINMASK_2;
 		s++;
-			
+
 		// win2 x2 to border
 		s->EndOffset = 256;
 		s->WindowMask = WINMASK_OUT;
@@ -1026,16 +1026,16 @@ void PPU_ComputerDoubleWindow(PPU_WindowSegment* s)
 	else
 	{
 		// window 2 first
-		
+
 		// border to win2 x1
 		s->EndOffset = PPU.WinX[2];
 		s->WindowMask = WINMASK_OUT;
 		s++;
-			
+
 		if (PPU.WinX[0] < PPU.WinX[3])
 		{
 			// windows overlapped
-			
+
 			// win2 x1 to win1 x1
 			s->EndOffset = PPU.WinX[0];
 			s->WindowMask = WINMASK_2;
@@ -1044,7 +1044,7 @@ void PPU_ComputerDoubleWindow(PPU_WindowSegment* s)
 			if(PPU.WinX[1] <= PPU.WinX[3])
 			{
 				// win1 fully in win2
-				
+
 				// close win1
 				s->EndOffset = PPU.WinX[1];
 				s->WindowMask = WINMASK_12;
@@ -1069,23 +1069,23 @@ void PPU_ComputerDoubleWindow(PPU_WindowSegment* s)
 		else
 		{
 			// windows separate
-				
+
 			// win2 x1 to win2 x2
 			s->EndOffset = PPU.WinX[3];
 			s->WindowMask = WINMASK_2;
 			s++;
-				
+
 			// win2 x2 to win1 x1
 			s->EndOffset = PPU.WinX[0];
 			s->WindowMask = WINMASK_OUT;
 			s++;
 		}
-			
+
 		// to win1 x2
 		s->EndOffset = PPU.WinX[1];
 		s->WindowMask = WINMASK_1;
 		s++;
-			
+
 		// win1 x2 to border
 		s->EndOffset = 256;
 		s->WindowMask = WINMASK_OUT;
@@ -1097,7 +1097,7 @@ void PPU_ComputeWindows(PPU_WindowSegment* s)
 	PPU_WindowSegment* first_s = s;
 	//bprintf("-0- (%d,%d), -1- (%d,%d)\n", PPU.WinX[0], PPU.WinX[1], PPU.WinX[2], PPU.WinX[3]);
 	// check for cases that would disable windows fully
-	if ((!((PPU.MainScreen|PPU.SubScreen) & 0x1F00)) && 
+	if ((!((PPU.MainScreen|PPU.SubScreen) & 0x1F00)) &&
 		(((PPU.ColorMath1 & 0x30) == 0x00) || ((PPU.ColorMath1 & 0x30) == 0x30)))
 	{
 		//bprintf("Disabled\n");
@@ -1106,7 +1106,7 @@ void PPU_ComputeWindows(PPU_WindowSegment* s)
 		s->ColorMath = 0x10;
 		return;
 	}
-	
+
 	// first, check single-window cases
 
 	if (PPU.WinX[2] >= PPU.WinX[3])
@@ -1122,14 +1122,14 @@ void PPU_ComputeWindows(PPU_WindowSegment* s)
 		// okay, we have two windows
 		PPU_ComputerDoubleWindow(s);
 	}
-	
+
 	// precompute the final window for color math
 	s = first_s;
 	for (;;)
 	{
 		u16 isinside = PPU.ColorMathWindowCombine & (1 << (s->WindowMask ^ PPU.ColorMathWindowMask));
 		s->ColorMath = isinside ? 0x20 : 0x10;
-		
+
 		if (s->EndOffset >= 256) break;
 		s++;
 	}
@@ -1139,7 +1139,7 @@ void PPU_ComputeWindows(PPU_WindowSegment* s)
 void PPU_RenderScanline(u32 line)
 {
 	if (SkipThisFrame) return;
-	
+
 	if (PPU.HardwareRenderer)
 		PPU_RenderScanline_Hard(line);
 	else
@@ -1149,7 +1149,7 @@ void PPU_RenderScanline(u32 line)
 void PPU_VBlank()
 {
 	FinishRendering();
-	
+
 	if (!SkipThisFrame)
 	{
 		if (PPU.HardwareRenderer)
@@ -1160,18 +1160,20 @@ void PPU_VBlank()
 		else
 			PPU_VBlank_Soft();
 	}
-	
+
 	RenderTopScreen();
-	
+
 	PPU.OAMAddr = PPU.OAMReload;
-	
+
 	if (!PPU.ForcedBlank)
 		PPU.OBJOverflow = 0;
-		
+
 	if (SNES_AutoJoypad)
 	{
 		SNES_Joy16 = 0;
 		IO_ManualReadKeys();
+		IO_ManualReadKeys2();
 		SNES_JoyBit = 16;
+		SNES_JoyBit2 = 16;
 	}
 }
