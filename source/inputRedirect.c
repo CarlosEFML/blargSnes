@@ -59,13 +59,27 @@ void failExit(const char *fmt, ...) {
 
 ControlIRED lastControl = {.buttons = 0, .cPadAxis1 = 0x7FF, .cPadAxis2 = 0x7FF, .cStickAxis1 = 0x80, .cStickAxis2 = 0x80};
 void recvUDPPackIRED(int sock, ControlIRED *control) {
-    u8 pack[32];
     struct sockaddr_in senderaddr;
     socklen_t len = sizeof(struct sockaddr_in);
+    u8 pack[32];
 
     int n = recvfrom(sock, (void *)pack, 32,
             0, ( struct sockaddr *) &senderaddr,
             &len);
+
+    while (n >= 20) {
+      u8 tmp[32];
+      int recv = recvfrom(sock, (void *)tmp, 32,
+              MSG_PEEK, ( struct sockaddr *) &senderaddr,
+              &len);
+
+      if (recv != n) break;
+      if (memcmp(pack, tmp, n) != 0) break;
+
+      recvfrom(sock, (void *)tmp, 32,
+              0, ( struct sockaddr *) &senderaddr,
+              &len);
+    }
 
     if (n >= 20) {
       control->buttons = (pack[0] ^ 0XFF) | ((pack[1] ^ 0x0F) << 8);
@@ -194,5 +208,3 @@ int initSysIRED(void) {
 
   return 1;
 }
-
-
